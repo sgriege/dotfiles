@@ -1,0 +1,13 @@
+#! /bin/sh
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 [RSYNC_OPTION ...] SRC DEST" >&2
+    echo 'Noteworthy additional rsync options:' >&2
+    echo '  --exclude=PATTERN' >&2
+    exit 1
+fi
+
+script=`realpath "$0"`
+dir=`dirname "$script"`
+
+"$dir/clone-path" --no-motd --quiet "$@"

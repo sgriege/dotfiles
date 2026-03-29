@@ -1,0 +1,19 @@
+#! /usr/bin/perl
+
+for my $img (@ARGV) {
+  $img =~ m'^(.+)\.([^.]+)$'o;
+
+  my ($basename, $extension) = ($1, lc($2));
+
+  die '"' . $img . '": Missing extension' . "\n"
+    unless (defined $extension);
+  die '"' . $img . '": Does not seem to be a JPEG image' . "\n"
+    unless ($extension eq 'jpg' or $extension eq 'jpeg');
+
+  my $target = $basename . '_rotated.jpg';
+
+  system("jpegtran -rotate 90 \"$img\" > \"$target\"") == 0
+    or die '"' . $img . '": Failed to rotate' . "\n";
+}
+
+exit(0);

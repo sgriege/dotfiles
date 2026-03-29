@@ -1,0 +1,9 @@
+#! /bin/sh
+
+file_private_key="$HOME/.ssh/id_rsa"
+file_public_key="${file_private_key}.pub"
+
+[ -e "${file_private_key}" ] && mv -i "${file_private_key}" "${file_private_key}.old"
+[ -e "${file_public_key}" ]  && mv -i "${file_public_key}"  "${file_public_key}.old"
+
+ssh-keygen -t rsa -b 4096 -f "$file_private_key"

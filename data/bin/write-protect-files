@@ -1,0 +1,9 @@
+#! /bin/sh
+
+# Check number of command line arguments.
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 DIRECTORY ..." >&2
+    exit 1
+fi
+
+find "$@" -type f -execdir chmod 444 '{}' +

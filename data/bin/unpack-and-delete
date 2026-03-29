@@ -1,0 +1,27 @@
+#! /bin/sh
+
+# Check number of command line arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 FILE" >&2
+    exit 1
+fi
+
+# Try to extract the file.
+if [[ $1 =~ \.tar(\..+)?$ ]]; then
+    tar -xvf "$1"
+elif [[ $1 =~ \.zip$ ]]; then
+    unzip "$1"
+elif [[ $1 =~ \.rar$ ]]; then
+    unrar x "$1"
+else
+    echo "Sorry, don't know how to unpack \"$1\"." >&2
+    exit 1
+fi
+
+# Abort if extraction failed.
+if [ $? -ne 0 ]; then
+    exit $?
+fi
+
+# Delete the file.
+rm -i "$1"

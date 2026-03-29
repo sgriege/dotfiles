@@ -1,0 +1,182 @@
+#! /usr/bin/perl
+
+# Updates the files in the current directory.
+# Copyright (C) 2011-2012 Simon Grieger
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+use 5.011_002;
+use strict;
+use warnings;
+
+use File::Copy;
+use File::Find;
+
+###########################################################################
+# Validate and parse command line arguments                               #
+###########################################################################
+
+my $usage = "Usage: $0 <source_directory>\n";
+
+die $usage unless (@ARGV == 1);
+
+my $sourceDirectory = shift;
+
+die "Error: \"$sourceDirectory\" is not a directory.\n", $usage
+  unless (-d $sourceDirectory);
+
+###########################################################################
+# Find files in source directory                                          #
+###########################################################################
+
+my $pool;
+my $numSourceFiles = 0;
+
+my $addFileToPool = sub {
+  # Add the file to the pool if it is regular.
+  if (-f) {
+    push(@{$pool->{$_}}, $File::Find::name);
+    $numSourceFiles++;
+  }
+};
+
+print STDERR "Finding files in \"$sourceDirectory\"...\n";
+find($addFileToPool, $sourceDirectory);
+print STDERR "Found $numSourceFiles file(s).\n";
+
+###########################################################################
+# Scan current directory                                                  #
+###########################################################################
+
+my $currentDirectory;
+my @files = ();
+
+print STDERR "Scanning current directory...\n";
+opendir($currentDirectory, '.')
+  or die "Error: Unable to open current directory: $!\n";
+
+while (readdir($currentDirectory)) {
+  # Skip the current and parent directory.
+  next if ($_ eq '.' or $_ eq '..');
+
+  # Skip the file if it is not regular.
+  if (not -f) {
+    warn "Warning: Skipping \"$_\", as it is not a regular file.\n";
+    next;
+  }
+
+  push(@files, $_);
+}
+
+closedir($currentDirectory);
+print STDERR 'Found ' . @files . " file(s).\n\n";
+
+###########################################################################
+# Update files                                                            #
+###########################################################################
+
+my $numUpdatedFiles  = 0;
+my $numFailedUpdates = 0;
+
+foreach (@files) {
+  my $sourceFile;
+
+  if (not defined $pool->{$_}) {
+    warn "Warning: Could not find \"$_\" in \"$sourceDirectory\".\n";
+    next;
+  }
+  elsif (@{$pool->{$_}} == 1) {
+    $sourceFile = $pool->{$_}[0];
+  }
+  else {
+    # As there is more than one candidate for the current file, let the
+    # user choose one.
+
+    my $numCandidates = @{$pool->{$_}};
+    my $choice;
+
+    print STDERR "\n> Found $numCandidates candidates for file \"$_\".\n";
+    print STDERR "> Please select a file from the list below.\n";
+
+    print STDERR ">\n";
+
+    # List candidates.
+    for (my $i = 0; $i < $numCandidates; $i++) {
+      print STDERR '>   ' . ($i + 1) . ') ' . $pool->{$_}[$i] . "\n";
+    }
+
+    print STDERR ">\n";
+
+    # Await user's input and validate it.
+    do {
+      print STDERR "> Please enter a number between 1 and $numCandidates, or 0 to skip this file.\n"
+        if (defined $choice);
+      print STDERR '> Your choice (0 to skip this file): ';
+      chomp($choice = <STDIN>);
+    } while (not ($choice =~ m'^[0-9]+$'o and $choice >= 0 and $choice <= $numCandidates));
+
+    print "\n";
+
+    if ($choice == 0) {
+      print STDERR "\"$_\" skipped.\n";
+      next;
+    }
+
+    $sourceFile = $pool->{$_}[$choice - 1];
+  }
+
+  my $mtime = (stat)[9];
+
+  if (not defined $mtime) {
+    warn "Warning: Failed to stat \"$_\". Skipping this file.\n";
+    next;
+  }
+
+  my $mtimeSourceFile = (stat($sourceFile))[9];
+
+  if (not defined $mtimeSourceFile) {
+    warn "Warning: Failed to stat \"$sourceFile\". Skipping \"$_\".\n";
+    next;
+  }
+
+  my $permissions = (stat(_))[2] & 07777;
+
+  # Update the file if necessary.
+  if ($mtimeSourceFile > $mtime) {
+    if (not copy($sourceFile, $_)) {
+      warn "Warning: Failed to update \"$_\": $!\n";
+      $numFailedUpdates++;
+    }
+    else {
+      chmod($permissions, $_) or warn "Warning: Failed to set permissions on \"$_\".\n";
+
+      print STDERR "\"$_\" updated.\n";
+      $numUpdatedFiles++;
+    }
+  }
+  else {
+    print STDERR "\"$_\" is up-to-date.\n";
+  }
+}
+
+###########################################################################
+# Print statistics and exit                                               #
+###########################################################################
+
+print STDERR "\n$numUpdatedFiles updated file(s)";
+print STDERR ", $numFailedUpdates failed update(s)";
+print STDERR ', ' . (@files - ($numUpdatedFiles + $numFailedUpdates)) . " unmodified file(s).\n";
+
+0;

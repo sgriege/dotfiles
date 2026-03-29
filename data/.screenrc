@@ -1,0 +1,22 @@
+defutf8 on
+altscreen on
+vbell off
+truecolor on
+
+setenv __SCREEN_TERM "${TERM}"
+
+status bottom left
+hardstatus alwayslastline
+hardstatus string "  %?%{= 0;7}  %-Lw%{-}%?%{=b 7;4}  %n%f %t%? (%u)%?  %{-}%?%{= 0;7}%+Lw  %{-}%?%=     %{=${__ATTR_SCREEN_DIM_BOLD}}%H%{-}     %{=${__ATTR_SCREEN_DIM_BOLD}}%Y-%m-%d %0c%{-}  "
+
+caption always
+# Use %< instead of %= and explicitly fill with spaces, because since
+# Screen 5.0.0, %= does not reliably fill with spaces anymore when
+# specifying an absolute position (garbage(?) character(s) at the end of
+# the padded area).
+caption string "%?%F%{=b 7;4}%:%{= 0;7}%?  Window %n    %013< %f          %024< %?%F%{=b 7;4}%:%{=${__ATTR_SCREEN_DIM_BOLD_FOR_BLACK_FG} 0;7}%?%t%{-}%?     (Users: %u)%?%?%P     (Copy mode)%?%=  %{-}"
+
+rendition bell "=${__ATTR_SCREEN_DIM_BOLD} 5;7"
+rendition monitor "=${__ATTR_SCREEN_DIM_BOLD} 5;7"
+rendition silence "=${__ATTR_SCREEN_DIM_BOLD} 5;7"
+rendition so +r

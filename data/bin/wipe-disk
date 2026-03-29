@@ -1,0 +1,58 @@
+#! /bin/sh
+
+DISK_WIPE_BYTES=$((64 * 1024))
+
+display_usage_and_fail() {
+    echo "Usage: $0 {full|quick|secure} DISK" >&2
+    exit 1
+}
+
+[ $# -eq 2 ] || display_usage_and_fail
+mode=$1
+disk=$2
+
+case $mode in
+    full)
+        dd if=/dev/zero of="$disk" bs=1M oflag=sync status=progress || exit $?
+        ;;
+
+    quick)
+        case $(uname) in
+            Linux)
+                disk_sector_size=512
+                disk_size_sectors=$(blockdev --getsz "$disk")
+                [ $? -eq 0 ] || exit $?
+                ;;
+
+            FreeBSD)
+                diskinfo "$disk" | read __disk            \
+                                        disk_sector_size  \
+                                        __disk_size_bytes \
+                                        disk_size_sectors \
+                                        __remainder
+                [ $? -eq 0 ] || exit $?
+                ;;
+
+            *)
+                echo 'Unknown operating system' >&2
+                exit 1
+        esac
+
+        disk_wipe_sectors=$(($DISK_WIPE_BYTES / $disk_sector_size))
+
+        dd if=/dev/zero of="$disk" bs=$disk_sector_size count=$disk_wipe_sectors \
+           oflag=sync                                                            || exit $?
+        dd if=/dev/zero of="$disk" bs=$disk_sector_size count=$disk_wipe_sectors \
+           seek=$(($disk_size_sectors - $disk_wipe_sectors))                     \
+           oflag=sync                                                            || exit $?
+        ;;
+
+    secure)
+        dd if=/dev/zero   of="$disk" bs=1M oflag=sync status=progress || exit $?
+        dd if=/dev/random of="$disk" bs=1M oflag=sync status=progress || exit $?
+        dd if=/dev/zero   of="$disk" bs=1M oflag=sync status=progress || exit $?
+        ;;
+
+    *)
+        display_usage_and_fail
+esac

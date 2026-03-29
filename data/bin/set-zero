@@ -1,0 +1,4 @@
+#! /usr/bin/perl
+use warnings;
+
+utime 0, 0, @ARGV;

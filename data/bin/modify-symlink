@@ -1,0 +1,20 @@
+#! /bin/sh
+
+# Check number of command line arguments.
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 NEW_TARGET LINK_NAME" >&2
+    exit 1
+fi
+
+new_target="$1"
+link_name="$2"
+
+# Check whether the link exists.
+if [ ! -L "$link_name" ]; then
+    echo "$link_name: Not a symbolic link" >&2
+    exit 1
+fi
+
+# Modify the link.
+rm "$link_name" || exit $?
+ln -s "$new_target" "$link_name"

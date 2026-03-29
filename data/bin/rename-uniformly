@@ -1,0 +1,24 @@
+#! /bin/sh
+
+# Check number of command line arguments.
+if [ $# -lt 3 ]; then
+    echo "Usage: $0 PREFIX SUFFIX {FILE ...}" >&2
+    exit 1
+fi
+
+prefix="$1"
+shift
+suffix="$1"
+shift
+
+for file in "$@"; do
+    if echo "$file" | grep '/' > /dev/null; then
+        echo "Error: \"$file\" contains at least one path separator" >&2
+        exit 1
+    fi
+
+    intermediate_file="$prefix$file$suffix"
+
+    mv  -i "$file" "$intermediate_file" || exit $?
+    imv -i "$intermediate_file"         || exit $?
+done

@@ -1,0 +1,138 @@
+#! /bin/sh
+
+# Note: This script currently does not support files or directories with
+# whitespace in their names.
+
+########################################################################
+# Path to the script for unpacking the configuration
+########################################################################
+
+date=`date +%Y%m%d-%H%M%S`
+config="/tmp/unpack-basic-config-$date.sh"
+
+########################################################################
+# Configuration (all paths relative to home directory)
+########################################################################
+
+# Directories to be created (empty).
+config_dirs='bin tmp'
+
+# Data to be packed. This may also contain directories; their content will
+# be included.
+config_data='.bashrc .bash_profile .bash_logout'
+config_data="$config_data .config/btop/btop.conf"
+config_data="$config_data .config/lftp/rc"
+config_data="$config_data .emacs .emacs-custom.el .emacs-lisp.d"
+config_data="$config_data .screenrc"
+config_data="$config_data .ssh/config"
+config_data="$config_data bin/clone-path"
+config_data="$config_data bin/clone-path-silently"
+config_data="$config_data bin/clone-path-with-overall-progress"
+config_data="$config_data bin/clone-path-with-verbose-progress"
+config_data="$config_data bin/convert-biblatex-to-bibtex"
+config_data="$config_data bin/cure-filenames"
+config_data="$config_data bin/find-broken-symlinks"
+config_data="$config_data bin/generate-password"
+config_data="$config_data bin/generate-ssh-key"
+config_data="$config_data bin/get-cached-file"
+config_data="$config_data bin/get-seconds-since-epoch"
+config_data="$config_data bin/get-time"
+config_data="$config_data bin/increment-counter"
+config_data="$config_data bin/initialize-counter"
+config_data="$config_data bin/lock-terminal"
+config_data="$config_data bin/manage-bootable-drive"
+config_data="$config_data bin/merge-jpegs-to-pdf"
+config_data="$config_data bin/modify-symlink"
+config_data="$config_data bin/move-if-new-or-modified"
+config_data="$config_data bin/number-pica-records"
+config_data="$config_data bin/number-wos-records"
+config_data="$config_data bin/open-file"
+config_data="$config_data bin/rename-uniformly"
+config_data="$config_data bin/rotate-jpegs-clockwise"
+config_data="$config_data bin/set-mtime-and-atime-to-btime"
+config_data="$config_data bin/set-zero"
+config_data="$config_data bin/silence"
+config_data="$config_data bin/stop-disk"
+config_data="$config_data bin/sync-directory"
+config_data="$config_data bin/transfer-files"
+config_data="$config_data bin/unpack-and-delete"
+config_data="$config_data bin/update-files"
+config_data="$config_data bin/wipe-disk"
+config_data="$config_data bin/wipe-virtual-disk-image"
+config_data="$config_data bin/write-protect-files"
+config_data="$config_data bin/write-protect-files-and-directories"
+config_data="$config_data lib/perl5/Bib.pm"
+config_data="$config_data lib/perl5/BibEntry.pm"
+
+# Files and directories to be removed.
+config_clean='.config/htop'
+config_clean="$config_clean .emacs.lisp"
+config_clean="$config_clean .ftp_profiles"
+config_clean="$config_clean .ssh_profiles"
+config_clean="$config_clean bin/run-lftp"
+config_clean="$config_clean bin/run-rsync-for-backup"
+config_clean="$config_clean bin/run-rsync-for-backup-silently"
+config_clean="$config_clean bin/run-rsync-for-backup-with-overall-progress"
+config_clean="$config_clean bin/run-rsync-for-backup-with-verbose-progress"
+config_clean="$config_clean bin/run-scp"
+config_clean="$config_clean bin/run-ssh"
+
+########################################################################
+# Pack basic configuration
+########################################################################
+
+cd "$HOME"
+
+# Write the script header.
+cat <<CONFIG > "$config"
+#! /bin/sh
+
+########################################################################
+# Initialize
+########################################################################
+
+script=\`realpath "\$0"\`
+
+if [ \$# -ge 1 ] && [ "\$1" = '--init' ]; then
+  echo '>>> Initializing basic config' >&2
+  INIT='true'
+fi
+
+########################################################################
+# Prepare home directory
+########################################################################
+
+cd "\$HOME"
+
+# Create directories.
+mkdir -p $config_dirs
+
+# Clean up.
+for path in $config_clean; do
+  if [ -e "\$path" ]; then
+    rm -ir "\$path"
+  fi
+done
+
+########################################################################
+# Unpack basic configuration
+########################################################################
+
+TAR_OPTIONS='-m'
+if [ ! "\$INIT" ]; then TAR_OPTIONS="\$TAR_OPTIONS --keep-newer-files"; fi
+
+sed '1,/^__DATA__$/d' "\$script" | base64 -d | tar -xvf - \$TAR_OPTIONS
+exit \$?
+
+########################################################################
+# Data
+########################################################################
+
+__DATA__
+CONFIG
+
+# Pack and append the data. Note: This will not work under FreeBSD, as
+# FreeBSD's base64 expects the explicit option "-e" for encoding, which
+# does not seem to be present in GNU's base64.
+tar -cvf - $config_data | base64 >> "$config"
+chmod a-w "$config"

@@ -1,0 +1,9 @@
+#! /bin/sh
+
+if [ -e /etc/fedora-release ]; then
+    /usr/bin/vlock
+elif [ $(uname) == 'FreeBSD' ]; then
+    /usr/bin/lock -np
+else
+    exit 1
+fi

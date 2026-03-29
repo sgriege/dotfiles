@@ -1,0 +1,23 @@
+#! /usr/bin/perl
+
+unless (@ARGV >= 2) {
+  die 'Usage: ' . $0 . ' TARGET_PDF_FILE JPEG_IMAGE ...' . "\n";
+}
+
+my $target = shift;
+
+open(my $postscript, '|-', 'gs',
+     '-dNOSAFER',
+     '-sDEVICE=pdfwrite',
+     '-o', $target,
+     '-sPAPERSIZE=a4',
+     'viewjpeg.ps',
+     '-')
+  or die 'Ghostscript failed: ' . "$!\n";
+
+foreach my $img (@ARGV) {
+  print $postscript '(' . $img . ') viewJPEG showpage' . "\n";
+}
+
+close($postscript);
+exit(0);

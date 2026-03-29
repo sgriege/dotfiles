@@ -1,0 +1,22 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+
+my $i          = 1;
+my $empty_line = 0;
+
+for (<>) {
+  chomp;
+
+  if ($empty_line) {
+    print 'Record #' . $i++ . "\n\n"
+      if m'^\s+(?:Titel|Aufsatz|Schriftenreihe|Gesamttitel):\s+.+$'o;
+  }
+
+  $empty_line = m'^\s*$'o ? 1 : 0;
+
+  print $_ . "\n";
+}
+
+0;

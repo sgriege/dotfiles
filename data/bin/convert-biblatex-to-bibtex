@@ -1,0 +1,71 @@
+#! /usr/bin/perl
+
+use 5.036;
+use strict;
+use warnings;
+
+use Bib;
+use BibEntry;
+
+########################################################################
+# Constants
+########################################################################
+
+my %RENAME_FIELDS = (
+                     'annotation'   => 'annote',
+                     'eid'          => 'pages',
+                     'eprintclass'  => 'primaryclass',
+                     'eprinttype'   => 'archiveprefix',
+                     'journaltitle' => 'journal',
+                     'location'     => 'address',
+                     'sortkey'      => 'key',
+                    );
+
+########################################################################
+# Main
+########################################################################
+
+my $bib           = Bib->new();
+my $converted_bib = Bib->new();
+
+$bib->read_from_file_handle(\*STDIN);
+
+foreach my $entry ($bib->get_entries()) {
+  if ($entry isa BibEntry) {
+    # Convert and add entry.
+    my $converted_entry = $entry->clone();
+
+    $converted_entry->set_type('TechReport')
+      if (lc($converted_entry->get_type()) eq 'report');
+
+    if ($converted_entry->has_field('date')) {
+      my $date = $converted_entry->get_field_data('date');
+
+      $date =~ m'^\s*(\d{4})(?:-(\d{2}))?(?:-\d{2})?\s*$'o;
+
+      $converted_entry->add_field('year',  int($1)) if (defined $1);
+      $converted_entry->add_field('month', int($2)) if (defined $2);
+      $converted_entry->remove_field('date');
+    }
+
+    foreach my $rename_field (keys(%RENAME_FIELDS)) {
+      $converted_entry->rename_field($rename_field, $RENAME_FIELDS{$rename_field})
+        if ($converted_entry->has_field($rename_field));
+    }
+
+    $converted_entry->rename_field('institution', 'school')
+      if ($converted_entry->has_field('institution') and
+          (lc($converted_entry->get_type()) eq 'phdthesis' or
+           lc($converted_entry->get_type()) eq 'mastersthesis'));
+
+    $converted_bib->add_entry($converted_entry);
+  }
+  else {
+    # Add unparsed string unmodified.
+    $converted_bib->add_entry($entry);
+  }
+}
+
+$converted_bib->write_to_file_handle(\*STDOUT);
+
+exit 0;

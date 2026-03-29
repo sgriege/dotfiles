@@ -1,0 +1,40 @@
+#! /bin/sh
+
+# This script is intended to synchronize a directory on an external
+# DOS-formatted storage medium (or similar) with the given source
+# directory. It circumvents the problem of missing exact timestamps on the
+# destination, making the use of rsync impractical, by not synchronizing
+# the timestamps at all. Instead, it uses cp to update all new/modified
+# files and deletes removed files afterwards.
+
+IFS=$'\n'
+
+# Check number of command line arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 SOURCE_DIRECTORY" >&2
+    exit 1
+fi
+
+# Determine source and destination.
+src=${1%/}
+dst=$(basename "$src")
+
+# Copy files.
+cp --recursive --update --dereference --verbose "$src" .
+if [ $? -ne 0 ]; then exit $?; fi
+
+# Delete orphaned files.
+for file in $(find "$dst" -depth); do
+    # Skip the destination directory.
+    if [ "$file" = "$dst" ]; then continue; fi
+
+    # If the file does not exist in the source directory, it needs to be
+    # removed from the destination directory.
+    if [ ! -e "$src/${file#*/}" ]; then
+        if [ -d "$file" ]; then
+            rmdir -v "$file"
+        else
+            rm -i "$file"
+        fi
+    fi
+done

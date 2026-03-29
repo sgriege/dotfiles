@@ -1,0 +1,25 @@
+#! /bin/sh
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 FILE" >&2
+    exit 1
+fi
+
+file=$(realpath --canonicalize-missing --no-symlinks "$1")
+dir_cache="$HOME/.cache/files"
+cache_file="$dir_cache/$(echo -n "$file" | sha512sum | cut --delimiter=' ' --fields=1)"
+
+if [ -f "$file" ]; then
+    if [ ! -f "$cache_file" -o "$file" -nt "$cache_file" ]; then
+        mkdir -p "$dir_cache"
+        cp "$file" "$cache_file" || exit $?
+    fi
+elif [ -e "$file" ]; then
+    echo "$0: File \"$file\" is not a regular file" >&2
+    exit 1
+elif [ ! -f "$cache_file" ]; then
+    echo "$0: File \"$file\" does not exist and has not been cached yet" >&2
+    exit 1
+fi
+
+cat "$cache_file"

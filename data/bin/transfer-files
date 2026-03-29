@@ -1,0 +1,62 @@
+#! /bin/bash
+
+die() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+show_progress() {
+    echo " * $1 ..." >&2
+}
+
+# Check number of command line arguments.
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 REGULAR_FILE_1 [REGULAR_FILE_2 ...] DESTINATION_DIRECTORY" >&2
+    exit 1
+fi
+
+shopt -s extglob
+
+argv=("$@")
+files=("${argv[@]:0:$((${#argv[@]} - 1))}")
+dest=${argv[-1]%%+(/)}
+
+# Check source files.
+for file in "${files[@]}"; do
+    [ -e "$file" ] || die "\"$file\" does not exist"
+    [ -f "$file" ] || die "\"$file\" is not a regular file"
+done
+
+# Check destination.
+[ -d "$dest" ] || die "\"$dest\" is not a directory"
+
+# Copy files.
+show_progress 'Copying files'
+cp -aiv "${files[@]}" "$dest"
+
+# Sync and drop caches.
+show_progress 'Syncing written files'
+# TODO: Sync only destination files.
+sync # Under Linux, sync(2) waits for I/O completions.
+show_progress 'Dropping caches (sudo)'
+echo 1 | sudo tee /proc/sys/vm/drop_caches > /dev/null
+
+# Verify destination files.
+for source_file in "${files[@]}"; do
+    dest_file="$dest/$(basename "$source_file")"
+
+    show_progress "Verifying copy of \"$source_file\""
+
+    [ -e "$dest_file" ] || die "\"$dest_file\" does not exist"
+    [ -f "$dest_file" ] || die "\"$dest_file\" is not a regular file"
+
+    diff --brief "$source_file" "$dest_file" || die "Copying of \"$source file\" to \"$dest_file\" failed"
+done
+
+# Remove source files.
+show_progress 'Removing source files'
+for source_file in "${files[@]}"; do
+    rm "$source_file"
+done
+
+exit 0

@@ -1,0 +1,67 @@
+#! /bin/sh
+
+MBR='/usr/share/syslinux/mbr.bin'
+
+display_usage_and_fail() {
+    echo "Usage: $0 ACTION [ARGUMENT ...]" >&2
+    echo 'Actions: write-iso-image-to-disk-or-partition write-adapted-iso-image-to-partition write-mbr' >&2
+    exit 1
+}
+
+[ $# -ge 1 ] || display_usage_and_fail
+action=$1
+shift
+
+case $action in
+    write-iso-image-to-disk-or-partition)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $0 write-iso-image-to-disk-or-partition IMAGE DISK_OR_PARTITION" >&2
+            exit 1
+        fi
+
+        image=$1
+        device=$2
+
+        # Write the image.
+        dd if="$image" of="$device" bs=1M oflag=sync status=progress || exit $?
+
+        ;;
+
+    write-adapted-iso-image-to-partition)
+        if [ $# -ne 2 ]; then
+            echo "Usage: $0 write-adapted-iso-image-to-partition IMAGE PARTITION" >&2
+            exit 1
+        fi
+
+        image=$1
+        partition=$2
+
+        # Prepare the image.
+        prepared_image=`mktemp '/tmp/image-XXXXXXXX.iso'` || exit $?
+        cp "$image" "$prepared_image" || exit $?
+        isohybrid --partok "$prepared_image" || exit $?
+
+        # Write the image.
+        dd if="$prepared_image" of="$partition" bs=1M oflag=sync status=progress || exit $?
+
+        # Clean up.
+        rm -f "$prepared_image" || exit $?
+
+        ;;
+
+    write-mbr)
+        if [ $# -ne 1 ]; then
+            echo "Usage: $0 write-mbr DISK" >&2
+            exit 1
+        fi
+
+        disk=$1
+
+        # Write the MBR.
+        dd if="$MBR" of="$disk" oflag=sync || exit $?
+
+        ;;
+
+    *)
+        display_usage_and_fail
+esac

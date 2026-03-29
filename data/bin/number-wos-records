@@ -1,0 +1,23 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+
+my $i            = 1;
+my $new_record   = 1;
+
+for (<>) {
+  chomp;
+
+  if ($new_record) {
+    print 'Record #' . $i++ . "\n\n" if not m'^\s*EF\s*$'o;
+    $new_record = 0;
+  }
+  elsif (m'^\s*$'o) {
+    $new_record = 1;
+  }
+
+  print $_ . "\n";
+}
+
+0;

@@ -1,0 +1,49 @@
+#! /bin/sh
+
+# Check number of command line arguments.
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 SOURCE TARGET" >&2
+    exit 1
+fi
+
+source=$1
+target=$2
+
+# Check whether the source is a regular file.
+if [ ! -f "$source" ]; then
+    echo "Source must be a regular file" >&2
+    exit 1
+fi
+
+# Check whether the target is either nonexistent or a regular file.
+if [ -e "$target" -a ! -f "$target" ]; then
+    echo "Target must be either nonexistent or a regular file" >&2
+    exit 1
+fi
+
+move=''
+
+# Determine whether the source is new/modified.
+if [ -e "$target" ]; then
+    diff -qs "$target" "$source"
+    status=$?
+
+    # Abort if diff failed.
+    if [ $status -gt 1 ]; then
+        exit 1
+    fi
+
+    # Check whether the source is modified.
+    if [ $status -eq 1 ]; then
+        move='true'
+    fi
+else
+    move='true'
+fi
+
+# Move or remove the source, as appropriate.
+if [ $move ]; then
+    mv -i "$source" "$target"
+else
+    rm -i "$source"
+fi

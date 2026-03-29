@@ -1,0 +1,10 @@
+#! /bin/sh
+
+# Check number of command line arguments.
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 FILE" >&2
+    exit 1
+fi
+
+# Initialize/reset the counter.
+echo 0 > "$1"
