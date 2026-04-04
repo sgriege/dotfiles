@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 # Code for managing sgriege's personal dotfiles.
 # Copyright (C) 2026 Simon Grieger
