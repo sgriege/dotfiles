@@ -27,6 +27,30 @@ warn() {
     return 0
 }
 
+get_relative_symlink_target() {
+    [ $# -eq 2 ] || return 1
+    local target="${1%%/}"
+    local link_name="${2%%/}"
+
+    # Make paths absolute if they are relative.
+    [[ ${target}    == /* ]] || target="$(pwd)/$target"
+    [[ ${link_name} == /* ]] || link_name="$(pwd)/$link_name"
+
+    # Find a common path prefix by starting with the symlink's directory as the prefix and removing
+    # path components from the end until the prefix is found at the beginning of the target
+    # path. Always have a path separator at the end of the prefix to easily handle the root
+    # directory as a possible prefix.
+    local prefix="$(dirname "$link_name")"
+    [[ $prefix == */ ]] || prefix="${prefix}/"
+    local ascend_path=''
+    while [[ $target != "$prefix"* ]]; do
+        prefix="${prefix%/*/}/"
+        ascend_path="../$ascend_path"
+    done
+
+    printf '%s%s' "$ascend_path" "${target#"$prefix"}"
+}
+
 dotfiles_clean_dir() {
     [ $# -eq 1 ] || return 1
     local dir="${HOME}/$1"
@@ -70,13 +94,14 @@ dotfiles_install_file() {
     local dotfile="$1"
     local dotfile_src="data/${dotfile}"
     local dotfile_dst="${HOME}/${dotfile}"
+    local symlink_target="$(get_relative_symlink_target "$dotfile_src" "$dotfile_dst")"
 
     [ -f "$dotfile_src" ] || die "\"$dotfile_src\"" does not exist or is not a regular file
 
     if [ -L "$dotfile_dst" ]; then
         # Don't recreate the symlink if a correct one is already in place. Remove it if it points to
         # the wrong location.
-        if [ "$(readlink -mn "$dotfile_dst")" = "$(realpath -m "$dotfile_src")" ]; then
+        if [ "$(readlink -n "$dotfile_dst")" = "$symlink_target" ]; then
             return 0
         else
             rm -i "$dotfile_dst"
@@ -94,7 +119,7 @@ dotfiles_install_file() {
     fi
 
     mkdir -p "$(dirname "$dotfile_dst")" || die
-    ln -sr "$dotfile_src" "$dotfile_dst" || die
+    ln -s "$symlink_target" "$dotfile_dst" || die
 
     return 0
 }
