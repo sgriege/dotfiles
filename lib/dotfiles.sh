@@ -105,7 +105,7 @@ dotfiles_install_all() {
     local file
     while IFS='' read -d '' -r file <&3; do
         dotfiles_install_file "${file#${DOTFILES_DIR_DATA}/}"
-    done 3< <(find "$DOTFILES_DIR_DATA" -type f -print0 | sort)
+    done 3< <(find "$DOTFILES_DIR_DATA" -type f -print0 | sort -z)
 
     return 0
 }
