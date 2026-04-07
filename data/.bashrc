@@ -228,7 +228,7 @@ __bash_set_prompt "$__BASH_PROMPT" "$__BASH_WINDOW_TITLE" "$__BASH_ICON_NAME"
 trap '__bash_update_window_title "${BASH_COMMAND}" "${BASH_COMMAND%% *}"' DEBUG
 
 # Set paths.
-export PATH="$PATH:$HOME/.local/bin:$HOME/bin"
+export PATH="/opt/local/bin:/opt/local/sbin:$PATH:$HOME/.local/bin:$HOME/bin"
 export PERL5LIB="$HOME/lib/perl5"
 export R_LIBS_USER="$HOME/lib/R"
 
