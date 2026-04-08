@@ -134,3 +134,11 @@ dotfiles_install_all() {
 
     return 0
 }
+
+dotfiles_make() {
+    # Even though macOS comes with GNU Make by default, it is installed solely as "make"; there is
+    # no "gmake" (sym)linked to "make".
+    local make='gmake'
+    [ "$(uname)" = 'Darwin' ] && make='make'
+    $make "$@"
+}

@@ -32,4 +32,4 @@ dotfiles_clean_file 'bin/run-rsync-for-backup-with-verbose-progress'
 
 dotfiles_create_dir 'tmp'
 dotfiles_install_all
-gmake -C tools
+dotfiles_make -C tools
