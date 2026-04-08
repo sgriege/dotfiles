@@ -30,6 +30,6 @@ dotfiles_clean_file 'bin/run-rsync-for-backup-silently'
 dotfiles_clean_file 'bin/run-rsync-for-backup-with-overall-progress'
 dotfiles_clean_file 'bin/run-rsync-for-backup-with-verbose-progress'
 
-dotfiles_make_dir 'tmp'
+dotfiles_create_dir 'tmp'
 dotfiles_install_all
 gmake -C tools

@@ -83,7 +83,7 @@ dotfiles_clean_file() {
     return 0
 }
 
-dotfiles_make_dir() {
+dotfiles_create_dir() {
     [ $# -eq 1 ] || return 1
     mkdir -p "${HOME}/$1" || die
     return 0
